@@ -13,7 +13,7 @@ this patch kit is based on that Makefile.
 
 the size of newlib and picolibc is larger than redlib, so all functions of OpenGD77 cannot store into MCU's ROM. currently, international language support is disabled -- English language only.
 
-and, *all* components are optimized with -Os option to reduce size. some objects in original OpenGD77 is compiled with -O0 (no optimization), but this is required due to improper code (I reported at https://www.opengd77.com/viewtopic.php?f=16&t=2587&p=21304&hilit=jg1uaa#p21304 but rejected). I believe -Os binary works no problem, but not well tested.
+and, *all* components are optimized with -Os option to reduce size. some objects in original OpenGD77 is compiled with -O0 (no optimization), but this is required due to improper code (I reported at https://www.opengd77.com/viewtopic.php?f=16&t=2587 but rejected). I believe -Os binary works no problem, but not well tested.
 
 ## License
 
