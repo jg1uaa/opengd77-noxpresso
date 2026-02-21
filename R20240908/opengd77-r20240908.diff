@@ -1,6 +1,6 @@
 diff -uNpr OpenGD77_MK22_20240908.orig/firmware/Makefile OpenGD77_MK22_20240908/firmware/Makefile
 --- OpenGD77_MK22_20240908.orig/firmware/Makefile	1970-01-01 09:00:00.000000000 +0900
-+++ OpenGD77_MK22_20240908/firmware/Makefile	2026-02-18 22:00:00.300670208 +0900
++++ OpenGD77_MK22_20240908/firmware/Makefile	2026-02-21 15:10:37.024199877 +0900
 @@ -0,0 +1,250 @@
 +##
 +## export PATH=$ARM_TOOLCHAIN_PATH:$PATH
@@ -254,7 +254,7 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/Makefile OpenGD77_MK22_20240908/
 +MKDIR_P ?= mkdir -p
 diff -uNpr OpenGD77_MK22_20240908.orig/firmware/include/dmr_codec/codec.h OpenGD77_MK22_20240908/firmware/include/dmr_codec/codec.h
 --- OpenGD77_MK22_20240908.orig/firmware/include/dmr_codec/codec.h	2026-02-17 23:00:43.382069034 +0900
-+++ OpenGD77_MK22_20240908/firmware/include/dmr_codec/codec.h	2026-02-17 23:00:55.273128973 +0900
++++ OpenGD77_MK22_20240908/firmware/include/dmr_codec/codec.h	2026-02-21 15:10:37.024199877 +0900
 @@ -49,9 +49,9 @@
  #define AMBE_ENCODE_ECC 0x00054228;
  */
@@ -270,7 +270,7 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/include/dmr_codec/codec.h OpenGD
  extern uint8_t ambebuffer_encode[CODEC_ENCODE_CONFIG_DATA_LENGTH];
 diff -uNpr OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_library_picolibc.ld OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_library_picolibc.ld
 --- OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_library_picolibc.ld	1970-01-01 09:00:00.000000000 +0900
-+++ OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_library_picolibc.ld	2026-02-17 23:01:01.968470684 +0900
++++ OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_library_picolibc.ld	2026-02-21 15:10:37.024199877 +0900
 @@ -0,0 +1,10 @@
 +/*
 + * Generated Linker script file for MK22FN512xxx12
@@ -284,7 +284,7 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_library_p
 +)
 diff -uNpr OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_newlib.ld OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_newlib.ld
 --- OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_newlib.ld	2026-02-17 23:00:44.902128299 +0900
-+++ OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_newlib.ld	2026-02-17 23:01:01.960471390 +0900
++++ OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_newlib.ld	2026-02-21 15:10:37.024199877 +0900
 @@ -47,15 +47,13 @@ SECTIONS
  
      .text_main : ALIGN(4)
@@ -331,7 +331,7 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_newlib.ld
  }
 diff -uNpr OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_picolibc.ld OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_picolibc.ld
 --- OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_picolibc.ld	1970-01-01 09:00:00.000000000 +0900
-+++ OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_picolibc.ld	2026-02-17 23:01:01.964471037 +0900
++++ OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_picolibc.ld	2026-02-21 15:10:37.024199877 +0900
 @@ -0,0 +1,196 @@
 +/*
 + * Generated Linker script file for MK22FN512xxx12
@@ -531,11 +531,12 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_picolibc.
 +}
 diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/dmr_codec/codec_interface.c OpenGD77_MK22_20240908/firmware/source/dmr_codec/codec_interface.c
 --- OpenGD77_MK22_20240908.orig/firmware/source/dmr_codec/codec_interface.c	2026-02-17 23:00:44.222101878 +0900
-+++ OpenGD77_MK22_20240908/firmware/source/dmr_codec/codec_interface.c	2026-02-21 12:19:32.139131535 +0900
-@@ -35,131 +35,139 @@ static uint16_t bitbuffer_encode[72];
- void codecDecode(uint8_t *indata_ptr, int numbBlocks)
++++ OpenGD77_MK22_20240908/firmware/source/dmr_codec/codec_interface.c	2026-02-21 17:33:45.148201636 +0900
+@@ -36,130 +36,143 @@ void codecDecode(uint8_t *indata_ptr, in
  {
  	uint16_t bitbuffer_decode[49];
+ 
++	/* sp+12: any value, r12: non-zero value is required */
 +	const uint32_t args_decode[] = {  
 +		// (none)			   r0
 +		80,				// r1
@@ -545,10 +546,9 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/dmr_codec/codec_interface
 +		0,				// r5 (-> sp + 0)
 +		0,				// r6 (-> sp + 4)
 +		(int)ambebuffer_decode,		// r7 (-> sp + 8)
-+		// (none)			   r8 (-> sp + 12)
++		1,				// r12 (-> sp + 12)
 +	};
  
--
 -	register int r0 asm ("r0") __attribute__((unused));
 -	register int r1 asm ("r1") __attribute__((unused));
 -	register int r2 asm ("r2") __attribute__((unused));
@@ -578,9 +578,9 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/dmr_codec/codec_interface
 -			"BL " QU(AMBE_DECODE)
 +			"MOV R0, %1\n"
 +			"MOV R2, %0\n"
-+			"LDMIA R2, {R1-R7}\n"
++			"LDMIA R2, {R1-R7, R12}\n"
 +			"MOVS R1, R1\n"		// clear N, Z flag
-+			"STMDB SP!, {R5-R8}\n"
++			"STMDB SP!, {R5-R7, R12}\n"
 +			"BLX R4\n"
  			"ADD SP, SP, #0x10\n"
 -			"POP {R4-R11}"
@@ -611,9 +611,9 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/dmr_codec/codec_interface
 -			"BL " QU(AMBE_DECODE)
 +			"MOV R0, %1\n"
 +			"MOV R2, %0\n"
-+			"LDMIA R2, {R1-R7}\n"
++			"LDMIA R2, {R1-R7, R12}\n"
 +			"MOVS R6, #1\n"		// clear N, Z flag
-+			"STMDB SP!, {R5-R8}\n"
++			"STMDB SP!, {R5-R7, R12}\n"
 +			"BLX R4\n"
  			"ADD SP, SP, #0x10\n"
 -			"POP {R4-R11}"
@@ -634,6 +634,7 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/dmr_codec/codec_interface
 -	register int r0 asm ("r0") __attribute__((unused));
 -	register int r1 asm ("r1") __attribute__((unused));
 -	register int r2 asm ("r2") __attribute__((unused));
++	/* sp+16: any value, r12: non-negative value is required */
 +	const uint32_t args_encode[] = {
 +		(int)bitbuffer_encode,		// r0
 +		0,				// r1
@@ -644,7 +645,7 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/dmr_codec/codec_interface
 +		// (none)			   r6 (-> sp + 4)
 +		0x2000,				// r7 (-> sp + 8)
 +		(int)ambebuffer_encode,		// r8 (-> sp + 12)
-+		// (none)			   r9 (-> sp + 16)
++		0,				// r12 (-> sp + 16)
 +	};
  
  	memset((uint8_t *)outdata_ptr, 0, 9);// fills with zeros
@@ -672,10 +673,10 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/dmr_codec/codec_interface
 -		"BL " QU(AMBE_ENCODE)
 +		"MOV R0, %0\n"
 +		"MOV R2, %1\n"
-+		"LDMIA R0, {R0, R1, R3, R4, R7, R8}\n"
++		"LDMIA R0, {R0, R1, R3, R4, R7, R8, R12}\n"
 +		"MOVS R6, #0\n"
 +		"MOVS R5, #0x1840\n"	// clear N, Z flag
-+		"STMDB SP!, {R5-R9}\n"
++		"STMDB SP!, {R5-R8, R12}\n"
 +		"BLX R4\n"
  		"ADD SP, SP, #0x14\n"
 -		"POP {R4-R11}"
@@ -710,10 +711,10 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/dmr_codec/codec_interface
 -		"BL " QU(AMBE_ENCODE)
 +		"MOV R0, %0\n"
 +		"MOV R2, %1\n"
-+		"LDMIA R0, {R0, R1, R3, R4, R7, R8}\n"
++		"LDMIA R0, {R0, R1, R3, R4, R7, R8, R12}\n"
 +		"MOVS R6, #1\n"
 +		"MOVS R5, #0x0800\n"	// clear N, Z flag
-+		"STMDB SP!, {R5-R9}\n"
++		"STMDB SP!, {R5-R8, R12}\n"
 +		"BLX R4\n"
  		"ADD SP, SP, #0x14\n"
 -		"POP {R4-R11}"
@@ -726,7 +727,8 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/dmr_codec/codec_interface
  
 -	r0 = (int)bitbuffer_encode;
 -	r1 = (int)ambebuffer_encode_ecc;
--
++	/* ---- r12 must be preserved here ---- */
+ 
  	asm volatile (
  		"PUSH {R4-R11}\n"
 -		"SUB SP, SP, #0x14\n"
@@ -751,7 +753,7 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/dmr_codec/codec_interface
  	for (int i = 0; i < 72; i++)
 diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/hardware/SPI_Flash.c OpenGD77_MK22_20240908/firmware/source/hardware/SPI_Flash.c
 --- OpenGD77_MK22_20240908.orig/firmware/source/hardware/SPI_Flash.c	2026-02-17 23:00:44.262103432 +0900
-+++ OpenGD77_MK22_20240908/firmware/source/hardware/SPI_Flash.c	2026-02-17 23:00:58.796762741 +0900
++++ OpenGD77_MK22_20240908/firmware/source/hardware/SPI_Flash.c	2026-02-21 15:10:37.028199890 +0900
 @@ -69,12 +69,14 @@ static inline void spi_flash_enable(void
  	GPIO_PinInit(GPIO_SPI_FLASH_DO_U, Pin_SPI_FLASH_DO_U, &pin_config_output);
  	GPIO_PinInit(GPIO_SPI_FLASH_CS_U, Pin_SPI_FLASH_CS_U, &pin_config_output);
