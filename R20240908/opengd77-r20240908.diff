@@ -1,6 +1,6 @@
 diff -uNpr OpenGD77_MK22_20240908.orig/firmware/Makefile OpenGD77_MK22_20240908/firmware/Makefile
---- OpenGD77_MK22_20240908.orig/firmware/Makefile	Thu Jan  1 09:00:00 1970
-+++ OpenGD77_MK22_20240908/firmware/Makefile	Sun Sep  8 22:53:02 2024
+--- OpenGD77_MK22_20240908.orig/firmware/Makefile	1970-01-01 09:00:00.000000000 +0900
++++ OpenGD77_MK22_20240908/firmware/Makefile	2026-02-18 22:00:00.300670208 +0900
 @@ -0,0 +1,250 @@
 +##
 +## export PATH=$ARM_TOOLCHAIN_PATH:$PATH
@@ -225,9 +225,9 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/Makefile OpenGD77_MK22_20240908/
 +#../tools/GD77_FirmwareLoader "firmware.bin" GUI
 +# checksum -p MK22FN512xxx12 -d "firmware.bin"
 +
-+firmware.axf: $(OBJ) #all-recursive
++firmware.axf: $(OBJ) $(OZERO_OBJECTS) #all-recursive
 +	$(ECHO) "[LD ] firmware.axf"
-+	$(Q)$(CC) $(LFLAGS) -o $(BUILD_DIR)/firmware.axf $(OBJ) $(LINK_LIBS)
++	$(Q)$(CC) $(LFLAGS) -o $(BUILD_DIR)/firmware.axf $(OBJ) $(OZERO_OBJECTS) $(LINK_LIBS)
 +
 +$(OZERO_OBJECTS):
 +	$(Q)$(MKDIR_P) $(dir $@)
@@ -252,9 +252,25 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/Makefile OpenGD77_MK22_20240908/
 +-include $(DEPS)
 +
 +MKDIR_P ?= mkdir -p
+diff -uNpr OpenGD77_MK22_20240908.orig/firmware/include/dmr_codec/codec.h OpenGD77_MK22_20240908/firmware/include/dmr_codec/codec.h
+--- OpenGD77_MK22_20240908.orig/firmware/include/dmr_codec/codec.h	2026-02-17 23:00:43.382069034 +0900
++++ OpenGD77_MK22_20240908/firmware/include/dmr_codec/codec.h	2026-02-17 23:00:55.273128973 +0900
+@@ -49,9 +49,9 @@
+ #define AMBE_ENCODE_ECC 0x00054228;
+ */
+ 
+-#define AMBE_DECODE 0x0005543D;
+-#define AMBE_ENCODE 0x00054F94;
+-#define AMBE_ENCODE_ECC 0x0005534C;
++#define AMBE_DECODE 0x0005543D
++#define AMBE_ENCODE 0x00054F95
++#define AMBE_ENCODE_ECC 0x0005534D
+ 
+ extern uint8_t ambebuffer_decode[CODEC_DECODE_CONFIG_DATA_LENGTH];
+ extern uint8_t ambebuffer_encode[CODEC_ENCODE_CONFIG_DATA_LENGTH];
 diff -uNpr OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_library_picolibc.ld OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_library_picolibc.ld
---- OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_library_picolibc.ld	Thu Jan  1 09:00:00 1970
-+++ OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_library_picolibc.ld	Sun Sep  8 22:53:02 2024
+--- OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_library_picolibc.ld	1970-01-01 09:00:00.000000000 +0900
++++ OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_library_picolibc.ld	2026-02-17 23:01:01.968470684 +0900
 @@ -0,0 +1,10 @@
 +/*
 + * Generated Linker script file for MK22FN512xxx12
@@ -267,8 +283,8 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_library_p
 +  "libm.a"
 +)
 diff -uNpr OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_newlib.ld OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_newlib.ld
---- OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_newlib.ld	Sat Jan  7 19:13:10 2023
-+++ OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_newlib.ld	Sun Sep  8 22:53:02 2024
+--- OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_newlib.ld	2026-02-17 23:00:44.902128299 +0900
++++ OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_newlib.ld	2026-02-17 23:01:01.960471390 +0900
 @@ -47,15 +47,13 @@ SECTIONS
  
      .text_main : ALIGN(4)
@@ -314,8 +330,8 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_newlib.ld
      _image_size = _image_end - _image_start;
  }
 diff -uNpr OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_picolibc.ld OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_picolibc.ld
---- OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_picolibc.ld	Thu Jan  1 09:00:00 1970
-+++ OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_picolibc.ld	Sun Sep  8 22:53:02 2024
+--- OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_picolibc.ld	1970-01-01 09:00:00.000000000 +0900
++++ OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_picolibc.ld	2026-02-17 23:01:01.964471037 +0900
 @@ -0,0 +1,196 @@
 +/*
 + * Generated Linker script file for MK22FN512xxx12
@@ -514,19 +530,33 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_picolibc.
 +    _image_size = _image_end - _image_start;
 +}
 diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/dmr_codec/codec_interface.c OpenGD77_MK22_20240908/firmware/source/dmr_codec/codec_interface.c
---- OpenGD77_MK22_20240908.orig/firmware/source/dmr_codec/codec_interface.c	Fri Feb 23 09:43:00 2024
-+++ OpenGD77_MK22_20240908/firmware/source/dmr_codec/codec_interface.c	Sun Sep  8 22:53:02 2024
-@@ -36,22 +36,17 @@ void codecDecode(uint8_t *indata_ptr, int numbBlocks)
+--- OpenGD77_MK22_20240908.orig/firmware/source/dmr_codec/codec_interface.c	2026-02-17 23:00:44.222101878 +0900
++++ OpenGD77_MK22_20240908/firmware/source/dmr_codec/codec_interface.c	2026-02-21 12:19:32.139131535 +0900
+@@ -35,131 +35,139 @@ static uint16_t bitbuffer_encode[72];
+ void codecDecode(uint8_t *indata_ptr, int numbBlocks)
  {
  	uint16_t bitbuffer_decode[49];
++	const uint32_t args_decode[] = {  
++		// (none)			   r0
++		80,				// r1
++		(int)bitbuffer_decode,		// r2
++		0,				// r3
++		AMBE_DECODE,			// r4
++		0,				// r5 (-> sp + 0)
++		0,				// r6 (-> sp + 4)
++		(int)ambebuffer_decode,		// r7 (-> sp + 8)
++		// (none)			   r8 (-> sp + 12)
++	};
  
 -
 -	register int r0 asm ("r0") __attribute__((unused));
 -	register int r1 asm ("r1") __attribute__((unused));
 -	register int r2 asm ("r2") __attribute__((unused));
 -
-     for (int idx = 0; idx < numbBlocks; idx++)
-     {
+-    for (int idx = 0; idx < numbBlocks; idx++)
+-    {
++	for (int idx = 0; idx < numbBlocks; idx++)
++	{
  		initFrame(indata_ptr, bitbuffer_decode);
  		indata_ptr += 9;
  
@@ -536,21 +566,29 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/dmr_codec/codec_interface
 -		r1 = (int)ambebuffer_decode;
  
  		asm volatile (
-+			"MOV R2, %0\n"
-+			"MOV R0, %1\n"
-+			"MOV R1, %2\n"
  			"PUSH {R4-R11}\n"
- 			"SUB SP, SP, #0x10\n"
- 			"STR R1, [SP, #0x08]\n"
-@@ -64,16 +59,21 @@ void codecDecode(uint8_t *indata_ptr, int numbBlocks)
- 			"BL " QU(AMBE_DECODE)
+-			"SUB SP, SP, #0x10\n"
+-			"STR R1, [SP, #0x08]\n"
+-			"LDR R1, =0\n"
+-			"STR R1, [SP, #0x04]\n"
+-			"LDR R1, =0\n"
+-			"STR R1, [SP, #0x00]\n"
+-			"LDR R3, =0\n"
+-			"LDR R1, =80\n"
+-			"BL " QU(AMBE_DECODE)
++			"MOV R0, %1\n"
++			"MOV R2, %0\n"
++			"LDMIA R2, {R1-R7}\n"
++			"MOVS R1, R1\n"		// clear N, Z flag
++			"STMDB SP!, {R5-R8}\n"
++			"BLX R4\n"
  			"ADD SP, SP, #0x10\n"
- 			"POP {R4-R11}"
+-			"POP {R4-R11}"
++			"POP {R4-R11}\n"
 +			:
-+			: "r"(bitbuffer_decode),
-+			  "r"(currentWaveBuffer),
-+			  "r"(ambebuffer_decode)
-+			: "memory"
++			: "r"(args_decode),
++			  "r"(currentWaveBuffer)
++			: "memory", "cc", "r0", "r1", "r2", "r3", "r12"
  		);
  
  		soundStoreBuffer();
@@ -561,36 +599,58 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/dmr_codec/codec_interface
 -		r1 = (int)ambebuffer_decode;
  
  		asm volatile (
-+			"MOV R2, %0\n"
-+			"MOV R0, %1\n"
-+			"MOV R1, %2\n"
  			"PUSH {R4-R11}\n"
- 			"SUB SP, SP, #0x10\n"
- 			"STR R1, [SP, #0x08]\n"
-@@ -86,6 +86,11 @@ void codecDecode(uint8_t *indata_ptr, int numbBlocks)
- 			"BL " QU(AMBE_DECODE)
+-			"SUB SP, SP, #0x10\n"
+-			"STR R1, [SP, #0x08]\n"
+-			"LDR R1, =1\n"
+-			"STR R1, [SP, #0x04]\n"
+-			"LDR R1, =0\n"
+-			"STR R1, [SP, #0x00]\n"
+-			"LDR R3, =0\n"
+-			"LDR R1, =80\n"
+-			"BL " QU(AMBE_DECODE)
++			"MOV R0, %1\n"
++			"MOV R2, %0\n"
++			"LDMIA R2, {R1-R7}\n"
++			"MOVS R6, #1\n"		// clear N, Z flag
++			"STMDB SP!, {R5-R8}\n"
++			"BLX R4\n"
  			"ADD SP, SP, #0x10\n"
- 			"POP {R4-R11}"
+-			"POP {R4-R11}"
++			"POP {R4-R11}\n"
 +			:
-+			: "r"(bitbuffer_decode),
-+			  "r"(currentWaveBuffer),
-+			  "r"(ambebuffer_decode)
-+			: "memory"
++			: "r"(args_decode),
++			  "r"(currentWaveBuffer)
++			: "memory", "cc", "r0", "r1", "r2", "r3", "r12"
  		);
  
  		soundStoreBuffer();
-@@ -94,21 +99,16 @@ void codecDecode(uint8_t *indata_ptr, int numbBlocks)
+-    }
++	}
+ }
  
  void codecEncodeBlock(uint8_t *outdata_ptr)
  {
 -	register int r0 asm ("r0") __attribute__((unused));
 -	register int r1 asm ("r1") __attribute__((unused));
 -	register int r2 asm ("r2") __attribute__((unused));
--
++	const uint32_t args_encode[] = {
++		(int)bitbuffer_encode,		// r0
++		0,				// r1
++		// (none)			   r2
++		80,				// r3
++		AMBE_ENCODE,			// r4
++		// (none)			   r5 (-> sp + 0)
++		// (none)			   r6 (-> sp + 4)
++		0x2000,				// r7 (-> sp + 8)
++		(int)ambebuffer_encode,		// r8 (-> sp + 12)
++		// (none)			   r9 (-> sp + 16)
++	};
+ 
  	memset((uint8_t *)outdata_ptr, 0, 9);// fills with zeros
  	memset(bitbuffer_encode, 0, sizeof(bitbuffer_encode));// faster to call memset as it will be compiled as optimised code
  
- 
+-
  	soundRetrieveBuffer();// gets currentWaveBuffer pointer used as input r2 to the encoder
  
 -	r0 = (int)bitbuffer_encode;
@@ -598,24 +658,35 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/dmr_codec/codec_interface
 -	r1 = (int)ambebuffer_encode;// seems to be a hard coded (defined) memory address of 0x1FFF6B60. I'm not sure why it has to be hard coded, since its passed as a paramater (register)
 -
  	asm volatile (
+ 		"PUSH {R4-R11}\n"
+-		"SUB SP, SP, #0x14\n"
+-		"STR R1, [SP, #0x0C]\n"
+-		"LDR R1, =0x00002000\n"
+-		"STR R1, [SP, #0x08]\n"
+-		"LDR R1, =0\n"
+-		"STR R1, [SP, #0x04]\n"
+-		"LDR R1, =0x00001840\n"
+-		"STR R1, [SP, #0x00]\n"
+-		"LDR R3, =80\n"
+-		"LDR R1, =0\n"
+-		"BL " QU(AMBE_ENCODE)
 +		"MOV R0, %0\n"
 +		"MOV R2, %1\n"
-+		"MOV R1, %2\n"
- 		"PUSH {R4-R11}\n"
- 		"SUB SP, SP, #0x14\n"
- 		"STR R1, [SP, #0x0C]\n"
-@@ -123,15 +123,22 @@ void codecEncodeBlock(uint8_t *outdata_ptr)
- 		"BL " QU(AMBE_ENCODE)
++		"LDMIA R0, {R0, R1, R3, R4, R7, R8}\n"
++		"MOVS R6, #0\n"
++		"MOVS R5, #0x1840\n"	// clear N, Z flag
++		"STMDB SP!, {R5-R9}\n"
++		"BLX R4\n"
  		"ADD SP, SP, #0x14\n"
- 		"POP {R4-R11}"
+-		"POP {R4-R11}"
++		"POP {R4-R11}\n"
 +		:
-+		: "r"(bitbuffer_encode),
-+		  "r"(currentWaveBuffer), //tmp_wavbuffer
++		: "r"(args_encode),
++		  "r"(currentWaveBuffer) //tmp_wavbuffer
 +		  /* seems to be a hard coded (defined) memory address of
 +		     0x1FFF6B60. I'm not sure why it has to be hard coded,
 +		     since its passed as a parameter (register) */
-+		  "r"(ambebuffer_encode)
-+		: "memory"
++		: "memory", "cc", "r0", "r1", "r2", "r3", "r12"
  	);
  
  	soundRetrieveBuffer();// gets currentWaveBuffer pointer used as input r2 to the encoder
@@ -625,47 +696,63 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/dmr_codec/codec_interface
 -	r1 = (int)ambebuffer_encode;
 -
  	asm volatile (
+ 		"PUSH {R4-R11}\n"
+-		"SUB SP, SP, #0x14\n"
+-		"STR R1, [SP, #0x0C]\n"
+-		"LDR R1, =0x00002000\n"
+-		"STR R1, [SP, #0x08]\n"
+-		"LDR R1, =1\n"
+-		"STR R1, [SP, #0x04]\n"
+-		"LDR R1, =0x00000800\n"
+-		"STR R1, [SP, #0x00]\n"
+-		"LDR R3, =80\n"
+-		"LDR R1, =0\n"
+-		"BL " QU(AMBE_ENCODE)
 +		"MOV R0, %0\n"
 +		"MOV R2, %1\n"
-+		"MOV R1, %2\n"
- 		"PUSH {R4-R11}\n"
- 		"SUB SP, SP, #0x14\n"
- 		"STR R1, [SP, #0x0C]\n"
-@@ -146,12 +153,16 @@ void codecEncodeBlock(uint8_t *outdata_ptr)
- 		"BL " QU(AMBE_ENCODE)
++		"LDMIA R0, {R0, R1, R3, R4, R7, R8}\n"
++		"MOVS R6, #1\n"
++		"MOVS R5, #0x0800\n"	// clear N, Z flag
++		"STMDB SP!, {R5-R9}\n"
++		"BLX R4\n"
  		"ADD SP, SP, #0x14\n"
- 		"POP {R4-R11}"
+-		"POP {R4-R11}"
++		"POP {R4-R11}\n"
 +		:
-+		: "r"(bitbuffer_encode),
-+		  "r"(currentWaveBuffer), //tmp_wavbuffer
-+		  "r"(ambebuffer_encode)
-+		: "memory"
++		: "r"(args_encode),
++		  "r"(currentWaveBuffer) //tmp_wavbuffer
++		: "memory", "cc", "r0", "r1", "r2", "r3", "r12"
  	);
  
 -	r0 = (int)bitbuffer_encode;
 -	r1 = (int)ambebuffer_encode_ecc;
 -
  	asm volatile (
-+		"MOV R0, %0\n"
-+		"MOV R1, %1\n"
  		"PUSH {R4-R11}\n"
- 		"SUB SP, SP, #0x14\n"
- 		"MOV R3, R1\n"
-@@ -160,6 +171,10 @@ void codecEncodeBlock(uint8_t *outdata_ptr)
- 		"BL " QU(AMBE_ENCODE_ECC)
+-		"SUB SP, SP, #0x14\n"
+-		"MOV R3, R1\n"
+-		"LDR R2, =0\n"
++		"MOV R0, %0\n"
+ 		"MOV R1, R0\n"
+-		"BL " QU(AMBE_ENCODE_ECC)
++		"MOVS R2, #0\n"
++		"MOVS R3, %1\n"		// clear N, Z flag
++		"SUB SP, SP, #0x14\n"
++		"BLX %2\n"
  		"ADD SP, SP, #0x14\n"
  		"POP {R4-R11}"
 +		:
 +		: "r"(bitbuffer_encode),
-+		  "r"(ambebuffer_encode_ecc)
-+		: "memory"
++		  "r"(ambebuffer_encode_ecc),
++		  "r"(AMBE_ENCODE_ECC)
++		: "memory", "cc", "r0", "r1", "r2", "r3", "r12"
  	);
  
  	for (int i = 0; i < 72; i++)
 diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/hardware/SPI_Flash.c OpenGD77_MK22_20240908/firmware/source/hardware/SPI_Flash.c
---- OpenGD77_MK22_20240908.orig/firmware/source/hardware/SPI_Flash.c	Sun Jul 28 08:35:34 2024
-+++ OpenGD77_MK22_20240908/firmware/source/hardware/SPI_Flash.c	Sun Sep  8 22:53:02 2024
-@@ -69,12 +69,14 @@ static inline void spi_flash_enable(void)
+--- OpenGD77_MK22_20240908.orig/firmware/source/hardware/SPI_Flash.c	2026-02-17 23:00:44.262103432 +0900
++++ OpenGD77_MK22_20240908/firmware/source/hardware/SPI_Flash.c	2026-02-17 23:00:58.796762741 +0900
+@@ -69,12 +69,14 @@ static inline void spi_flash_enable(void
  	GPIO_PinInit(GPIO_SPI_FLASH_DO_U, Pin_SPI_FLASH_DO_U, &pin_config_output);
  	GPIO_PinInit(GPIO_SPI_FLASH_CS_U, Pin_SPI_FLASH_CS_U, &pin_config_output);
  	GPIO_SPI_FLASH_CS_U->PCOR = 1U << Pin_SPI_FLASH_CS_U;
@@ -681,7 +768,7 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/hardware/SPI_Flash.c Open
  	GPIO_PinInit(GPIO_SPI_FLASH_DO_U, Pin_SPI_FLASH_DO_U, &pin_config_input);
  }
  
-@@ -83,7 +85,7 @@ static inline uint8_t spi_flash_transfer(uint8_t c)
+@@ -83,7 +85,7 @@ static inline uint8_t spi_flash_transfer
  	for (uint8_t bit = 0; bit < 8; bit++)
  	{
  		GPIO_SPI_FLASH_CLK_U->PCOR = 1U << Pin_SPI_FLASH_CLK_U;
@@ -690,7 +777,7 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/hardware/SPI_Flash.c Open
  		if ((c & 0x80) == 0U)
  		{
  			GPIO_SPI_FLASH_DO_U->PCOR = 1U << Pin_SPI_FLASH_DO_U;// Hopefully the compiler will optimise this to a value rather than using a shift
-@@ -92,13 +94,12 @@ static inline uint8_t spi_flash_transfer(uint8_t c)
+@@ -92,13 +94,12 @@ static inline uint8_t spi_flash_transfer
  		{
  			GPIO_SPI_FLASH_DO_U->PSOR = 1U << Pin_SPI_FLASH_DO_U;// Hopefully the compiler will optimise this to a value rather than using a shift
  		}
