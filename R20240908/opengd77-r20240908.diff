@@ -166,7 +166,7 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/Makefile OpenGD77_MK22_20240908.
 +		-fmerge-constants -fstack-usage
 +
 +ifndef LIBC
-+	LIBC := picolibc
++	LIBC := newlib
 +endif
 +ifeq ("$(LIBC)","redlib")
 +    DEFINES += -D__REDLIB__
