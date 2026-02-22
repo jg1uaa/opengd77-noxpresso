@@ -1,7 +1,7 @@
-diff -uNpr OpenGD77_MK22_20240908.orig/firmware/Makefile OpenGD77_MK22_20240908/firmware/Makefile
+diff -uNpr OpenGD77_MK22_20240908.orig/firmware/Makefile OpenGD77_MK22_20240908.patched/firmware/Makefile
 --- OpenGD77_MK22_20240908.orig/firmware/Makefile	1970-01-01 09:00:00.000000000 +0900
-+++ OpenGD77_MK22_20240908/firmware/Makefile	2026-02-21 15:10:37.024199877 +0900
-@@ -0,0 +1,250 @@
++++ OpenGD77_MK22_20240908.patched/firmware/Makefile	2026-02-22 12:46:06.194198779 +0900
+@@ -0,0 +1,249 @@
 +##
 +## export PATH=$ARM_TOOLCHAIN_PATH:$PATH
 +## mkdir build && cd build && make -f ../Makefile -j8
@@ -57,8 +57,7 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/Makefile OpenGD77_MK22_20240908/
 +	$(wildcard ../osa/*.c)
 +
 +OZERO_SOURCES := \
-+#	../source/hardware/SPI_Flash.c                          \
-+#	../source/interfaces/gpio.c
++	../drivers/fsl_dspi.c
 +
 +##
 +## Drivers' source files and include directories
@@ -167,7 +166,7 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/Makefile OpenGD77_MK22_20240908/
 +		-fmerge-constants -fstack-usage
 +
 +ifndef LIBC
-+	LIBC := newlib
++	LIBC := picolibc
 +endif
 +ifeq ("$(LIBC)","redlib")
 +    DEFINES += -D__REDLIB__
@@ -252,9 +251,9 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/Makefile OpenGD77_MK22_20240908/
 +-include $(DEPS)
 +
 +MKDIR_P ?= mkdir -p
-diff -uNpr OpenGD77_MK22_20240908.orig/firmware/include/dmr_codec/codec.h OpenGD77_MK22_20240908/firmware/include/dmr_codec/codec.h
+diff -uNpr OpenGD77_MK22_20240908.orig/firmware/include/dmr_codec/codec.h OpenGD77_MK22_20240908.patched/firmware/include/dmr_codec/codec.h
 --- OpenGD77_MK22_20240908.orig/firmware/include/dmr_codec/codec.h	2026-02-17 23:00:43.382069034 +0900
-+++ OpenGD77_MK22_20240908/firmware/include/dmr_codec/codec.h	2026-02-21 15:10:37.024199877 +0900
++++ OpenGD77_MK22_20240908.patched/firmware/include/dmr_codec/codec.h	2026-02-21 17:39:04.795603526 +0900
 @@ -49,9 +49,9 @@
  #define AMBE_ENCODE_ECC 0x00054228;
  */
@@ -268,9 +267,9 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/include/dmr_codec/codec.h OpenGD
  
  extern uint8_t ambebuffer_decode[CODEC_DECODE_CONFIG_DATA_LENGTH];
  extern uint8_t ambebuffer_encode[CODEC_ENCODE_CONFIG_DATA_LENGTH];
-diff -uNpr OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_library_picolibc.ld OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_library_picolibc.ld
+diff -uNpr OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_library_picolibc.ld OpenGD77_MK22_20240908.patched/firmware/linkerscripts/firmware_library_picolibc.ld
 --- OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_library_picolibc.ld	1970-01-01 09:00:00.000000000 +0900
-+++ OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_library_picolibc.ld	2026-02-21 15:10:37.024199877 +0900
++++ OpenGD77_MK22_20240908.patched/firmware/linkerscripts/firmware_library_picolibc.ld	2026-02-21 17:39:04.803603507 +0900
 @@ -0,0 +1,10 @@
 +/*
 + * Generated Linker script file for MK22FN512xxx12
@@ -282,9 +281,9 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_library_p
 +  "libc.a"
 +  "libm.a"
 +)
-diff -uNpr OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_newlib.ld OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_newlib.ld
+diff -uNpr OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_newlib.ld OpenGD77_MK22_20240908.patched/firmware/linkerscripts/firmware_newlib.ld
 --- OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_newlib.ld	2026-02-17 23:00:44.902128299 +0900
-+++ OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_newlib.ld	2026-02-21 15:10:37.024199877 +0900
++++ OpenGD77_MK22_20240908.patched/firmware/linkerscripts/firmware_newlib.ld	2026-02-21 17:39:04.803603507 +0900
 @@ -47,15 +47,13 @@ SECTIONS
  
      .text_main : ALIGN(4)
@@ -329,9 +328,9 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_newlib.ld
 +    _image_end = LOADADDR(.codec_bin_section_2) + SIZEOF(.codec_bin_section_2) + SIZEOF(.upper_text);
      _image_size = _image_end - _image_start;
  }
-diff -uNpr OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_picolibc.ld OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_picolibc.ld
+diff -uNpr OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_picolibc.ld OpenGD77_MK22_20240908.patched/firmware/linkerscripts/firmware_picolibc.ld
 --- OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_picolibc.ld	1970-01-01 09:00:00.000000000 +0900
-+++ OpenGD77_MK22_20240908/firmware/linkerscripts/firmware_picolibc.ld	2026-02-21 15:10:37.024199877 +0900
++++ OpenGD77_MK22_20240908.patched/firmware/linkerscripts/firmware_picolibc.ld	2026-02-21 17:39:04.803603507 +0900
 @@ -0,0 +1,196 @@
 +/*
 + * Generated Linker script file for MK22FN512xxx12
@@ -529,9 +528,9 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/linkerscripts/firmware_picolibc.
 +    _image_end = LOADADDR(.codec_bin_section_2) + SIZEOF(.codec_bin_section_2) + SIZEOF(.upper_text);
 +    _image_size = _image_end - _image_start;
 +}
-diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/dmr_codec/codec_interface.c OpenGD77_MK22_20240908/firmware/source/dmr_codec/codec_interface.c
+diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/dmr_codec/codec_interface.c OpenGD77_MK22_20240908.patched/firmware/source/dmr_codec/codec_interface.c
 --- OpenGD77_MK22_20240908.orig/firmware/source/dmr_codec/codec_interface.c	2026-02-17 23:00:44.222101878 +0900
-+++ OpenGD77_MK22_20240908/firmware/source/dmr_codec/codec_interface.c	2026-02-21 17:33:45.148201636 +0900
++++ OpenGD77_MK22_20240908.patched/firmware/source/dmr_codec/codec_interface.c	2026-02-21 17:39:04.803603507 +0900
 @@ -36,130 +36,143 @@ void codecDecode(uint8_t *indata_ptr, in
  {
  	uint16_t bitbuffer_decode[49];
@@ -751,9 +750,9 @@ diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/dmr_codec/codec_interface
  	);
  
  	for (int i = 0; i < 72; i++)
-diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/hardware/SPI_Flash.c OpenGD77_MK22_20240908/firmware/source/hardware/SPI_Flash.c
+diff -uNpr OpenGD77_MK22_20240908.orig/firmware/source/hardware/SPI_Flash.c OpenGD77_MK22_20240908.patched/firmware/source/hardware/SPI_Flash.c
 --- OpenGD77_MK22_20240908.orig/firmware/source/hardware/SPI_Flash.c	2026-02-17 23:00:44.262103432 +0900
-+++ OpenGD77_MK22_20240908/firmware/source/hardware/SPI_Flash.c	2026-02-21 15:10:37.028199890 +0900
++++ OpenGD77_MK22_20240908.patched/firmware/source/hardware/SPI_Flash.c	2026-02-21 17:39:04.803603507 +0900
 @@ -69,12 +69,14 @@ static inline void spi_flash_enable(void
  	GPIO_PinInit(GPIO_SPI_FLASH_DO_U, Pin_SPI_FLASH_DO_U, &pin_config_output);
  	GPIO_PinInit(GPIO_SPI_FLASH_CS_U, Pin_SPI_FLASH_CS_U, &pin_config_output);
