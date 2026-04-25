@@ -1,0 +1,708 @@
+diff -uNpr OpenGD77_MK22_20231231.orig/firmware/Makefile OpenGD77_MK22_20231231/firmware/Makefile
+--- OpenGD77_MK22_20231231.orig/firmware/Makefile	1970-01-01 09:00:00.000000000 +0900
++++ OpenGD77_MK22_20231231/firmware/Makefile	2024-03-03 14:41:07.731629142 +0900
+@@ -0,0 +1,250 @@
++##
++## export PATH=$ARM_TOOLCHAIN_PATH:$PATH
++## mkdir build && cd build && make -f ../Makefile -j8
++##
++## if needed, you can specify some options like this:
++## make -f ../Makefile -j8 RADIO=GD77s VERBOSE=1
++##
++
++ifndef RADIO
++	RADIO := GD77
++endif
++
++##
++## Selection of MCU platform and baseband
++##
++ifeq ("$(RADIO)","GD77")
++	DEFINES  := -DPLATFORM_GD77
++	BIN2SGL_OPT  :=
++	BIN_FILE  := OpenGD77.bin
++else ifeq ("$(RADIO)","GD77s")
++	DEFINES  := -DPLATFORM_GD77S
++	BIN2SGL_OPT  := -m GD-77S
++	BIN_FILE  := OpenGD77S.bin
++else ifeq ("$(RADIO)","DM1801")
++	DEFINES  := -DPLATFORM_DM1801
++	BIN2SGL_OPT  := -m DM-1801
++	BIN_FILE  := OpenDM1801.bin
++else ifeq ("$(RADIO)","DM1801A")
++	DEFINES  := -DPLATFORM_DM1801A
++	BIN2SGL_OPT  := -m DM-1801
++	BIN_FILE  := OpenDM1801A.bin
++else ifeq ("$(RADIO)","RD5R")
++	DEFINES  := -DPLATFORM_RD5R
++	BIN2SGL_OPT  := -m RD-5R
++	BIN_FILE  := OpenDM5R.bin
++endif
++
++##
++## List here your source files (both .s, .c and .cpp)
++##
++SRC := $(wildcard ../source/*.c)                     \
++	$(wildcard ../source/dmr_codec/*.c)          \
++	../source/dmr_codec/codec_bin.S              \
++	$(wildcard ../source/functions/*.c)          \
++	$(wildcard ../source/hotspot/*.c)            \
++	$(wildcard ../source/hardware/*.c)           \
++	$(wildcard ../source/interfaces/*.c)         \
++	$(wildcard ../source/io/*.c)                 \
++	$(wildcard ../source/SeggerRTT/RTT/*.c)      \
++	$(wildcard ../source/SeggerRTT/Syscalls/*.c) \
++	$(wildcard ../source/usb/*.c)                \
++	$(wildcard ../source/user_interface/*.c )    \
++	$(wildcard ../osa/*.c)
++
++OZERO_SOURCES := \
++#	../source/hardware/SPI_Flash.c                          \
++#	../source/interfaces/gpio.c
++
++##
++## Drivers' source files and include directories
++##
++DRIVERS_INC := -I../                      \
++	-I../drivers                      \
++	-I../usb/device/class             \
++	-I../usb/device/source            \
++	-I../usb/device/include           \
++	-I../usb/device/source/ehci       \
++	-I../usb/device/source/khci       \
++	-I../usb/device/source/lpcip3511  \
++	-I../usb/include                  \
++	-I../usb/phy
++
++DRIVERS_SRC := $(wildcard ../drivers/*.c)              \
++	$(wildcard ../usb/device/class/*.c)            \
++	$(wildcard ../usb/device/source/*.c)           \
++	$(wildcard ../usb/device/source/ehci/*.c)      \
++	$(wildcard ../usb/device/source/khci/*.c)      \
++	$(wildcard ../usb/device/source/lpcip3511/*.c) \
++	$(wildcard ../usb/phy/*.c)                     \
++	../lists/fsl_component_generic_list.c
++
++##
++## List here additional static libraries with relative path
++##
++LIBS :=
++
++##
++## List here additional include directories (in the form -Iinclude_dir)
++##
++INCLUDE_DIRS := -I../source     \
++	-I../include            \
++	-I../include/hardware   \
++	-I../include/codec      \
++	-I../include/functions  \
++	-I../include/interfaces \
++	-I../include/io         \
++	-I../include/usb        \
++	-I../osa \
++	-I../lists
++
++##
++## List here additional defines
++##
++DEFINES += -DGITVERSION=\"`git rev-parse --short HEAD > /dev/null 2<&1 || echo UNKNOWN`\"  \
++	-DSDK_DEBUGCONSOLE=0                              \
++	-DCR_INTEGER_PRINTF                               \
++	-DPRINTF_FLOAT_ENABLE=0                           \
++	-DFSL_RTOS_FREE_RTOS                              \
++	-DSDK_OS_FREE_RTOS                                \
++	-DCPU_MK22FN512VLL12_cm4                          \
++	-D__MCUXPRESSO                                    \
++	-D__USE_CMSIS
++
++
++##
++## Debug defines
++##
++
++DEBUG := 0
++ifeq ($(DEBUG), 1)
++    DEFINES += -DDEBUG -g3 -DUSE_SEGGER_RTT
++else
++    DEFINES += -DNDEBUG
++endif
++
++
++##
++## Define used to select target processor
++##
++TARGET := -DCPU_MK22FN512VLL12
++
++
++##
++## Optimization level
++##
++OPTLEVEL := -Os
++#OPTLEVEL:= -O2
++#OPTLEVEL:= -O3
++#OPTLEVEL:= -Os
++
++##
++## Device-specific source files and include directories, e.g. startup code
++##
++DEVICE_INC := -I../CMSIS -I../board -I../device
++DEVICE_SRC := $(wildcard ../board/*.c)      \
++	../device/system_MK22F51212.c       \
++	$(wildcard ../startup/*.c)
++
++##
++## Operating system's source files and include directories
++##
++OS_INC := -I../amazon-freertos/include           \
++	-I../amazon-freertos/FreeRTOS/portable
++
++OS_SRC := $(wildcard ../amazon-freertos/FreeRTOS/*.c)                \
++	../amazon-freertos/FreeRTOS/portable/heap_4.c                \
++	../amazon-freertos/FreeRTOS/portable/port.c
++
++ALL_INC := $(OS_INC) $(DEVICE_INC) $(DRIVERS_INC) $(INCLUDE_DIRS)
++ALL_SRC := $(SRC) $(OS_SRC) $(DEVICE_SRC) $(DRIVERS_SRC)
++CONFIGS := $(TARGET) -Wall  -fno-common -g3 -ffunction-sections \
++		-fdata-sections -ffreestanding -fno-builtin \
++		-fmerge-constants -fstack-usage
++
++ifndef LIBC
++	LIBC := newlib
++endif
++ifeq ("$(LIBC)","redlib")
++    DEFINES += -D__REDLIB__
++    LINKERSCRIPT = ../linkerscripts/firmware.ld
++    CONFIGS += -specs=redlib.specs
++else ifeq ("$(LIBC)","newlib")
++    DEFINES += -D__NEWLIB_H__ -DLANGUAGE_BUILD_ENGLISH_ONLY
++    LINKERSCRIPT = ../linkerscripts/firmware_newlib.ld
++else ifeq ("$(LIBC)","picolibc")
++    DEFINES += -D__PICOLIBC_H__ -DLANGUAGE_BUILD_ENGLISH_ONLY
++    LINKERSCRIPT = ../linkerscripts/firmware_picolibc.ld
++    CONFIGS += -specs=picolibc.specs
++endif
++
++
++ifeq ("$(VERBOSE)","1")
++Q :=
++ECHO := @true
++else
++Q := @
++ECHO := @echo
++endif
++
++
++BUILD_DIR ?= ./bin
++
++## Replaces both "foo.cpp"-->"foo.o" and "foo.c"-->"foo.o"
++OBJ := $(addprefix $(BUILD_DIR)/,  $(addsuffix .o, $(basename $(ALL_SRC))))
++OZERO_OBJECTS := $(addprefix $(BUILD_DIR)/,  $(addsuffix .o, $(basename $(OZERO_SOURCES))))
++
++CFLAGS   := $(ALL_INC) -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb $(CONFIGS) \
++            $(DEFINES) $(EXCEPT) -c
++
++AFLAGS   := -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb
++LFLAGS   := -nostdlib -Xlinker -Map="firmware.map" -Xlinker --gc-sections -Xlinker  \
++	-print-memory-usage -Xlinker --sort-section=alignment -mcpu=cortex-m4       \
++	-mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -T $(LINKERSCRIPT) $(CONFIGS)
++
++DFLAGS   := -MMD -MP
++
++LINK_LIBS := $(LIBS)
++
++CC  := arm-none-eabi-gcc
++AS  := arm-none-eabi-as
++CP  := arm-none-eabi-objcopy
++SZ  := arm-none-eabi-size
++
++all: $(BIN_FILE)
++
++$(BIN_FILE): firmware.axf
++	$(ECHO) 'Performing post-build steps'
++	$(Q)$(SZ) $(BUILD_DIR)/firmware.axf
++	$(Q)$(CP) -v -O binary $(BUILD_DIR)/firmware.axf $(BUILD_DIR)/firmware.bin
++	$(Q) ../tools/codec_cleaner -i $(BUILD_DIR)/firmware.bin -o $(BUILD_DIR)/$(BIN_FILE)
++#../tools/GD77_FirmwareLoader "firmware.bin" GUI
++# checksum -p MK22FN512xxx12 -d "firmware.bin"
++
++firmware.axf: $(OBJ) #all-recursive
++	$(ECHO) "[LD ] firmware.axf"
++	$(Q)$(CC) $(LFLAGS) -o $(BUILD_DIR)/firmware.axf $(OBJ) $(LINK_LIBS)
++
++$(OZERO_OBJECTS):
++	$(Q)$(MKDIR_P) $(dir $@)
++	$(ECHO) "[CC0] $(@:bin/%.o=%.c)"
++	$(Q)$(CC)  $(DFLAGS) $(CFLAGS) -O0 $(@:bin/%.o=%.c) -o $@
++
++$(BUILD_DIR)/%.o: %.s
++	$(Q)$(MKDIR_P) $(dir $@)
++	$(ECHO) "[AS ] $<"
++	$(Q)$(AS)  $(AFLAGS) $< -o $@
++
++$(BUILD_DIR)/%.o : %.c
++	$(Q)$(MKDIR_P) $(dir $@)
++	$(ECHO) "[CC ] $<"
++	$(Q)$(CC)  $(DFLAGS) $(CFLAGS) $(OPTLEVEL) $< -o $@
++
++.PHONY: clean
++
++clean:
++	$(Q)$(RM) -rf $(BUILD_DIR) firmware.map && find . -type f -name "*.o" -exec rm {} + -o -name "*.d" -exec rm {} +
++
++-include $(DEPS)
++
++MKDIR_P ?= mkdir -p
+diff -uNpr OpenGD77_MK22_20231231.orig/firmware/linkerscripts/firmware_library_picolibc.ld OpenGD77_MK22_20231231/firmware/linkerscripts/firmware_library_picolibc.ld
+--- OpenGD77_MK22_20231231.orig/firmware/linkerscripts/firmware_library_picolibc.ld	1970-01-01 09:00:00.000000000 +0900
++++ OpenGD77_MK22_20231231/firmware/linkerscripts/firmware_library_picolibc.ld	2024-03-03 14:19:51.012401000 +0900
+@@ -0,0 +1,10 @@
++/*
++ * Generated Linker script file for MK22FN512xxx12
++ */
++
++GROUP (
++  "libgcc.a"
++  "libsemihost.a"
++  "libc.a"
++  "libm.a"
++)
+diff -uNpr OpenGD77_MK22_20231231.orig/firmware/linkerscripts/firmware_newlib.ld OpenGD77_MK22_20231231/firmware/linkerscripts/firmware_newlib.ld
+--- OpenGD77_MK22_20231231.orig/firmware/linkerscripts/firmware_newlib.ld	2023-12-27 11:15:16.000000000 +0900
++++ OpenGD77_MK22_20231231/firmware/linkerscripts/firmware_newlib.ld	2024-03-03 14:51:00.145623858 +0900
+@@ -47,15 +47,13 @@ SECTIONS
+ 
+     .text_main : ALIGN(4)
+     {
+-       *(.text*)
++       *(EXCLUDE_FILE(*menuCalibration.o *calibration.o).text* )
+        *(.rodata .rodata.* .constdata .constdata.*)
+        . = ALIGN(4);
+        _etext = . ;
+     } > PROGRAM_FLASH
+     
+ 
+-     
+-
+     /* Main DATA section (SRAM_LOWER) */
+     .data : ALIGN(4)
+     {
+@@ -110,7 +108,17 @@ SECTIONS
+        *(.codec_bin_section_2)
+         KEEP(*(.codec_bin_section_2))
+     } > PROGRAM_FLASH
+-
++    
++    .upper_text : ALIGN(4)
++    {
++    	*menuCalibration.o (.text*)
++        *calibration.o (.text*)
++        *(.text*)
++        *(.rodata .rodata.* .constdata .constdata.*)
++       . = ALIGN(4);
++    } > PROGRAM_FLASH
++    
++    
+     /* BSS section for SRAM_LOWER */
+     .bss_RAM2 : ALIGN(4)
+     {
+@@ -183,6 +191,6 @@ SECTIONS
+      * complex images (e.g multiple Flash banks).
+      */
+     _image_start = LOADADDR(.text_start);
+-    _image_end = LOADADDR(.codec_bin_section_2) + SIZEOF(.codec_bin_section_2);
++    _image_end = LOADADDR(.codec_bin_section_2) + SIZEOF(.codec_bin_section_2) + SIZEOF(.upper_text);
+     _image_size = _image_end - _image_start;
+ }
+diff -uNpr OpenGD77_MK22_20231231.orig/firmware/linkerscripts/firmware_picolibc.ld OpenGD77_MK22_20231231/firmware/linkerscripts/firmware_picolibc.ld
+--- OpenGD77_MK22_20231231.orig/firmware/linkerscripts/firmware_picolibc.ld	1970-01-01 09:00:00.000000000 +0900
++++ OpenGD77_MK22_20231231/firmware/linkerscripts/firmware_picolibc.ld	2024-03-03 14:54:12.239597429 +0900
+@@ -0,0 +1,196 @@
++/*
++ * Generated Linker script file for MK22FN512xxx12
++ */
++
++INCLUDE "../linkerscripts/firmware_library_picolibc.ld"
++INCLUDE "../linkerscripts/firmware_memory.ld"
++
++ENTRY(ResetISR)
++
++SECTIONS
++{
++    /* MAIN TEXT SECTION */
++    .text_start : ALIGN(4)
++    {
++        FILL(0xff)
++        __vectors_start__ = ABSOLUTE(.) ;
++        KEEP(*(.isr_vector))
++        /* Global Section Table */
++        . = ALIGN(4) ;
++        __section_table_start = .;
++        __data_section_table = .;
++        LONG(LOADADDR(.data));
++        LONG(    ADDR(.data));
++        LONG(  SIZEOF(.data));
++        LONG(LOADADDR(.data_RAM2));
++        LONG(    ADDR(.data_RAM2));
++        LONG(  SIZEOF(.data_RAM2));
++        __data_section_table_end = .;
++        __bss_section_table = .;
++        LONG(    ADDR(.bss));
++        LONG(  SIZEOF(.bss));
++        LONG(    ADDR(.bss_RAM2));
++        LONG(  SIZEOF(.bss_RAM2));
++        __bss_section_table_end = .;
++        __section_table_end = . ;
++        /* End of Global Section Table */
++
++        *(.after_vectors*)
++    } > PROGRAM_FLASH
++
++    .codec_bin_section_1 : ALIGN(4)
++    {
++       . = ABSOLUTE(0x4400) ;
++       *(.codec_bin_section_1)
++        KEEP(*(.codec_bin_section_1))
++    } > PROGRAM_FLASH
++
++    .text_main : ALIGN(4)
++    {
++       *(EXCLUDE_FILE(*menuCalibration.o *calibration.o).text* )
++       *(.rodata .rodata.* .constdata .constdata.*)
++       . = ALIGN(4);
++       _etext = . ;
++    } > PROGRAM_FLASH
++    
++
++    /* Main DATA section (SRAM_LOWER) */
++    .data : ALIGN(4)
++    {
++       FILL(0xff)
++       _data = . ;
++       *(vtable)
++       *(.ramfunc*)
++       *(.data*)
++       . = ALIGN(4) ;
++       _edata = . ;
++    } > SRAM_LOWER AT>PROGRAM_FLASH
++    
++        /* DATA section for SRAM_LOWER */
++
++    .data_RAM2 : ALIGN(4)
++    {
++        FILL(0xff)
++        PROVIDE(__start_data_RAM2 = .) ;
++        PROVIDE(__start_data_SRAM_LOWER = .) ;
++        *(.ramfunc.$RAM2)
++        *(.ramfunc.$SRAM_LOWER)
++        *(.data.$RAM2)
++        *(.data.$SRAM_LOWER)
++        *(.data.$RAM2.*)
++        *(.data.$SRAM_LOWER.*)
++        . = ALIGN(4) ;
++        PROVIDE(__end_data_RAM2 = .) ;
++        PROVIDE(__end_data_SRAM_LOWER = .) ;
++     } > SRAM_LOWER AT>PROGRAM_FLASH
++    
++    
++     
++    /* MAIN DATA SECTION */
++    .uninit_RESERVED : ALIGN(4)
++    {
++        KEEP(*(.bss.$RESERVED*))
++        . = ALIGN(4) ;
++        _end_uninit_RESERVED = .;
++    } > SRAM_UPPER
++
++    /* MAIN DATA SECTION */
++    .uninit_RESERVED_RAM2 : ALIGN(4)
++    {
++        KEEP(*(.bss.$RESERVED*))
++        . = ALIGN(4) ;
++        _end_uninit_RESERVED = .;
++    } > SRAM_LOWER
++
++    .codec_bin_section_2 : ALIGN(4)
++    {
++        . = ABSOLUTE(0x54000) ;
++       *(.codec_bin_section_2)
++        KEEP(*(.codec_bin_section_2))
++    } > PROGRAM_FLASH
++    
++    .upper_text : ALIGN(4)
++    {
++    	*menuCalibration.o (.text*)
++        *calibration.o (.text*)
++        *(.text*)
++        *(.rodata .rodata.* .constdata .constdata.*)
++       . = ALIGN(4);
++    } > PROGRAM_FLASH
++    
++    
++    /* BSS section for SRAM_LOWER */
++    .bss_RAM2 : ALIGN(4)
++    {
++       PROVIDE(__start_bss_RAM2 = .) ;
++       *(.bss.$RAM2*)
++       *(.bss.$SRAM_LOWER*)
++       *(COMMON)
++       . = ALIGN (. != 0 ? 4 : 1) ; /* avoid empty segment */
++       PROVIDE(__end_bss_RAM2 = .) ;
++    } > SRAM_LOWER
++
++
++    /* MAIN BSS SECTION */
++    .bss : ALIGN(4)
++    {
++        _bss = .;
++        *(.bss*)
++        *(COMMON)
++        . = ALIGN(4) ;
++        _ebss = .;
++        PROVIDE(end = .);
++    } > SRAM_UPPER
++
++    /* NOINIT section for SRAM_LOWER */
++    .noinit_RAM2 (NOLOAD) : ALIGN(4)
++    {
++       *(.noinit.$RAM2*)
++       *(.noinit.$SRAM_LOWER*)
++       . = ALIGN(4) ;
++    } > SRAM_LOWER 
++    
++
++    /* DEFAULT NOINIT SECTION */
++    .noinit (NOLOAD): ALIGN(4)
++    {
++        _noinit = .;
++        *(.noinit*) 
++         . = ALIGN(4) ;
++        _end_noinit = .;
++    } > SRAM_UPPER
++
++    /* Reserve and place Heap within memory map */
++    _HeapSize = 0x1000;
++    .heap :  ALIGN(4)
++    {
++        _pvHeapStart = .;
++        . += _HeapSize;
++        . = ALIGN(4);
++        _pvHeapLimit = .;
++    } > SRAM_LOWER
++
++     _StackSize = 0x1000;
++     /* Reserve space in memory for Stack */
++    .heap2stackfill  :
++    {
++        . += _StackSize;
++    } > SRAM_LOWER
++    
++    /* Locate actual Stack in memory map */
++    .stack ORIGIN(SRAM_LOWER) + LENGTH(SRAM_LOWER) - _StackSize - 0:  ALIGN(4)
++    {
++        _vStackBase = .;
++        . = ALIGN(4);
++        _vStackTop = . + _StackSize;
++    } > SRAM_LOWER
++
++    /* Provide basic symbols giving location and size of main text
++     * block, including initial values of RW data sections. Note that
++     * these will need extending to give a complete picture with
++     * complex images (e.g multiple Flash banks).
++     */
++    _image_start = LOADADDR(.text_start);
++    _image_end = LOADADDR(.codec_bin_section_2) + SIZEOF(.codec_bin_section_2) + SIZEOF(.upper_text);
++    _image_size = _image_end - _image_start;
++}
+diff -uNpr OpenGD77_MK22_20231231.orig/firmware/source/dmr_codec/codec_interface.c OpenGD77_MK22_20231231/firmware/source/dmr_codec/codec_interface.c
+--- OpenGD77_MK22_20231231.orig/firmware/source/dmr_codec/codec_interface.c	2023-12-27 11:15:16.000000000 +0900
++++ OpenGD77_MK22_20231231/firmware/source/dmr_codec/codec_interface.c	2024-03-03 14:24:04.305654360 +0900
+@@ -36,22 +36,17 @@ void codecDecode(uint8_t *indata_ptr, in
+ {
+ 	uint16_t bitbuffer_decode[49];
+ 
+-
+-	register int r0 asm ("r0") __attribute__((unused));
+-	register int r1 asm ("r1") __attribute__((unused));
+-	register int r2 asm ("r2") __attribute__((unused));
+-
+     for (int idx = 0; idx < numbBlocks; idx++)
+     {
+ 		initFrame(indata_ptr, bitbuffer_decode);
+ 		indata_ptr += 9;
+ 
+ 		soundSetupBuffer();// this just sets currentWaveBuffer but the compiler seems to optimise out the code if I try to do it in this file
+-		r2 = (int)bitbuffer_decode;
+-		r0 = (int)currentWaveBuffer;
+-		r1 = (int)ambebuffer_decode;
+ 
+ 		asm volatile (
++			"MOV R2, %0\n"
++			"MOV R0, %1\n"
++			"MOV R1, %2\n"
+ 			"PUSH {R4-R11}\n"
+ 			"SUB SP, SP, #0x10\n"
+ 			"STR R1, [SP, #0x08]\n"
+@@ -64,16 +59,21 @@ void codecDecode(uint8_t *indata_ptr, in
+ 			"BL " QU(AMBE_DECODE)
+ 			"ADD SP, SP, #0x10\n"
+ 			"POP {R4-R11}"
++			:
++			: "r"(bitbuffer_decode),
++			  "r"(currentWaveBuffer),
++			  "r"(ambebuffer_decode)
++			: "memory"
+ 		);
+ 
+ 		soundStoreBuffer();
+ 
+ 		soundSetupBuffer();// this just sets currentWaveBuffer but the compiler seems to optimise out the code if I try to do it in this file
+-		r2 = (int)bitbuffer_decode;
+-		r0 = (int)currentWaveBuffer;
+-		r1 = (int)ambebuffer_decode;
+ 
+ 		asm volatile (
++			"MOV R2, %0\n"
++			"MOV R0, %1\n"
++			"MOV R1, %2\n"
+ 			"PUSH {R4-R11}\n"
+ 			"SUB SP, SP, #0x10\n"
+ 			"STR R1, [SP, #0x08]\n"
+@@ -86,6 +86,11 @@ void codecDecode(uint8_t *indata_ptr, in
+ 			"BL " QU(AMBE_DECODE)
+ 			"ADD SP, SP, #0x10\n"
+ 			"POP {R4-R11}"
++			:
++			: "r"(bitbuffer_decode),
++			  "r"(currentWaveBuffer),
++			  "r"(ambebuffer_decode)
++			: "memory"
+ 		);
+ 
+ 		soundStoreBuffer();
+@@ -94,21 +99,16 @@ void codecDecode(uint8_t *indata_ptr, in
+ 
+ void codecEncodeBlock(uint8_t *outdata_ptr)
+ {
+-	register int r0 asm ("r0") __attribute__((unused));
+-	register int r1 asm ("r1") __attribute__((unused));
+-	register int r2 asm ("r2") __attribute__((unused));
+-
+ 	memset((uint8_t *)outdata_ptr, 0, 9);// fills with zeros
+ 	memset(bitbuffer_encode, 0, sizeof(bitbuffer_encode));// faster to call memset as it will be compiled as optimised code
+ 
+ 
+ 	soundRetrieveBuffer();// gets currentWaveBuffer pointer used as input r2 to the encoder
+ 
+-	r0 = (int)bitbuffer_encode;
+-	r2 = (int)currentWaveBuffer;//tmp_wavbuffer;
+-	r1 = (int)ambebuffer_encode;// seems to be a hard coded (defined) memory address of 0x1FFF6B60. I'm not sure why it has to be hard coded, since its passed as a paramater (register)
+-
+ 	asm volatile (
++		"MOV R0, %0\n"
++		"MOV R2, %1\n"
++		"MOV R1, %2\n"
+ 		"PUSH {R4-R11}\n"
+ 		"SUB SP, SP, #0x14\n"
+ 		"STR R1, [SP, #0x0C]\n"
+@@ -123,15 +123,22 @@ void codecEncodeBlock(uint8_t *outdata_p
+ 		"BL " QU(AMBE_ENCODE)
+ 		"ADD SP, SP, #0x14\n"
+ 		"POP {R4-R11}"
++		:
++		: "r"(bitbuffer_encode),
++		  "r"(currentWaveBuffer), //tmp_wavbuffer
++		  /* seems to be a hard coded (defined) memory address of
++		     0x1FFF6B60. I'm not sure why it has to be hard coded,
++		     since its passed as a parameter (register) */
++		  "r"(ambebuffer_encode)
++		: "memory"
+ 	);
+ 
+ 	soundRetrieveBuffer();// gets currentWaveBuffer pointer used as input r2 to the encoder
+ 
+-	r0 = (int)bitbuffer_encode;
+-	r2 = (int)currentWaveBuffer;//tmp_wavbuffer;
+-	r1 = (int)ambebuffer_encode;
+-
+ 	asm volatile (
++		"MOV R0, %0\n"
++		"MOV R2, %1\n"
++		"MOV R1, %2\n"
+ 		"PUSH {R4-R11}\n"
+ 		"SUB SP, SP, #0x14\n"
+ 		"STR R1, [SP, #0x0C]\n"
+@@ -146,12 +153,16 @@ void codecEncodeBlock(uint8_t *outdata_p
+ 		"BL " QU(AMBE_ENCODE)
+ 		"ADD SP, SP, #0x14\n"
+ 		"POP {R4-R11}"
++		:
++		: "r"(bitbuffer_encode),
++		  "r"(currentWaveBuffer), //tmp_wavbuffer
++		  "r"(ambebuffer_encode)
++		: "memory"
+ 	);
+ 
+-	r0 = (int)bitbuffer_encode;
+-	r1 = (int)ambebuffer_encode_ecc;
+-
+ 	asm volatile (
++		"MOV R0, %0\n"
++		"MOV R1, %1\n"
+ 		"PUSH {R4-R11}\n"
+ 		"SUB SP, SP, #0x14\n"
+ 		"MOV R3, R1\n"
+@@ -160,6 +171,10 @@ void codecEncodeBlock(uint8_t *outdata_p
+ 		"BL " QU(AMBE_ENCODE_ECC)
+ 		"ADD SP, SP, #0x14\n"
+ 		"POP {R4-R11}"
++		:
++		: "r"(bitbuffer_encode),
++		  "r"(ambebuffer_encode_ecc)
++		: "memory"
+ 	);
+ 
+ 	for (int i = 0; i < 72; i++)
+diff -uNpr OpenGD77_MK22_20231231.orig/firmware/source/hardware/SPI_Flash.c OpenGD77_MK22_20231231/firmware/source/hardware/SPI_Flash.c
+--- OpenGD77_MK22_20231231.orig/firmware/source/hardware/SPI_Flash.c	2023-12-27 11:15:16.000000000 +0900
++++ OpenGD77_MK22_20231231/firmware/source/hardware/SPI_Flash.c	2024-03-03 14:25:59.536387701 +0900
+@@ -69,12 +69,14 @@ static inline void spi_flash_enable(void
+ 	GPIO_PinInit(GPIO_SPI_FLASH_DO_U, Pin_SPI_FLASH_DO_U, &pin_config_output);
+ 	GPIO_PinInit(GPIO_SPI_FLASH_CS_U, Pin_SPI_FLASH_CS_U, &pin_config_output);
+ 	GPIO_SPI_FLASH_CS_U->PCOR = 1U << Pin_SPI_FLASH_CS_U;
++	__DSB();
+ }
+ 
+ static inline void spi_flash_disable(void)
+ {
+ 	GPIO_SPI_FLASH_CS_U->PSOR = 1U << Pin_SPI_FLASH_CS_U;
+-	GPIO_PinInit(GPIO_SPI_FLASH_CS_U, Pin_SPI_FLASH_CS_U, &pin_config_input);
++	__DSB();
++	// no need to call GPIO_PinInit to configure CS pin as input
+ 	GPIO_PinInit(GPIO_SPI_FLASH_DO_U, Pin_SPI_FLASH_DO_U, &pin_config_input);
+ }
+ 
+@@ -83,7 +85,7 @@ static inline uint8_t spi_flash_transfer
+ 	for (uint8_t bit = 0; bit < 8; bit++)
+ 	{
+ 		GPIO_SPI_FLASH_CLK_U->PCOR = 1U << Pin_SPI_FLASH_CLK_U;
+-		//		__asm volatile( "nop" );
++		__DSB();
+ 		if ((c & 0x80) == 0U)
+ 		{
+ 			GPIO_SPI_FLASH_DO_U->PCOR = 1U << Pin_SPI_FLASH_DO_U;// Hopefully the compiler will optimise this to a value rather than using a shift
+@@ -92,13 +94,12 @@ static inline uint8_t spi_flash_transfer
+ 		{
+ 			GPIO_SPI_FLASH_DO_U->PSOR = 1U << Pin_SPI_FLASH_DO_U;// Hopefully the compiler will optimise this to a value rather than using a shift
+ 		}
+-		//		__asm volatile( "nop" );
++		__DSB();
+ 		c <<= 1;
+ 		c |= (GPIO_SPI_FLASH_DI_U->PDIR >> Pin_SPI_FLASH_DI_U) & 0x01U;
+ 		// toggle the clock
+ 		GPIO_SPI_FLASH_CLK_U->PSOR = 1U << Pin_SPI_FLASH_CLK_U;
+-		//		__asm volatile( "nop" );
+-
++		__DSB();
+ 	}
+ 	return c;
+ }
