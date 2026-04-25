@@ -1,0 +1,233 @@
+diff -uNpr OpenGD77_MDUV380_DM1701_20260130.orig/MDUV380_firmware/Core/Startup/startup_stm32f405vgtx.s OpenGD77_MDUV380_DM1701_20260130/MDUV380_firmware/Core/Startup/startup_stm32f405vgtx.s
+--- OpenGD77_MDUV380_DM1701_20260130.orig/MDUV380_firmware/Core/Startup/startup_stm32f405vgtx.s	2026-04-25 16:40:00.659661369 +0900
++++ OpenGD77_MDUV380_DM1701_20260130/MDUV380_firmware/Core/Startup/startup_stm32f405vgtx.s	2026-04-25 16:44:49.082446269 +0900
+@@ -95,7 +95,8 @@ LoopFillZerobss:
+ /* Call the clock system intitialization function.*/
+   bl  SystemInit   
+ /* Call static constructors */
+-    bl __libc_init_array
++/* XXX workaround for non-STM32CubeIDE environment (no crti.o) */
++/*  bl __libc_init_array*/
+ /* Call the application's entry point.*/
+   bl  main
+   bx  lr    
+diff -uNpr OpenGD77_MDUV380_DM1701_20260130.orig/MDUV380_firmware/Makefile OpenGD77_MDUV380_DM1701_20260130/MDUV380_firmware/Makefile
+--- OpenGD77_MDUV380_DM1701_20260130.orig/MDUV380_firmware/Makefile	1970-01-01 09:00:00.000000000 +0900
++++ OpenGD77_MDUV380_DM1701_20260130/MDUV380_firmware/Makefile	2026-04-25 17:04:45.294999426 +0900
+@@ -0,0 +1,216 @@
++##
++## export PATH=$ARM_TOOLCHAIN_PATH:$PATH
++## mkdir build && cd build && make -f ../Makefile -j8
++##
++## if needed, you can specify some options like this:
++## make -f ../Makefile -j8 RADIO=MD-UV380 VERBOSE=1
++##
++
++ifndef RADIO
++	RADIO := MD-UV380
++endif
++
++##
++## Selection of MCU platform and baseband
++##
++ifeq ("$(RADIO)","MD-UV380")
++	DEFINES  := -DPLATFORM_MDUV380
++	BIN_FILE  := OpenMDUV380.bin
++else ifeq ("$(RADIO)","MD-UV380_10W")
++	DEFINES  := -DPLATFORM_MDUV380 -DPLATFORM_VARIANT_UV380_PLUS_10W
++	BIN_FILE  := OpenMDUV380_10W_PLUS.bin
++else ifeq ("$(RADIO)","RT-84")
++	DEFINES  := -DPLATFORM_RT84_DM1701
++	BIN_FILE  := OpenRT84.bin
++else ifeq ("$(RADIO)","DM-1701")
++	DEFINES  := -DPLATFORM_RT84_DM1701 -DPLATFORM_VARIANT_DM1701
++	BIN_FILE  := OpenDM1701.bin
++endif
++
++##
++## List here your source files (both .s, .c and .cpp)
++##
++SRC := \
++	$(wildcard ../application/source/*.c) \
++	$(wildcard ../application/source/dmr_codec/*.c) \
++	../application/source/dmr_codec/codec_bin.S \
++	$(wildcard ../application/source/functions/*.c) \
++	$(wildcard ../application/source/hardware/*.c) \
++	$(wildcard ../application/source/interfaces/*.c) \
++	$(wildcard ../application/source/io/*.c) \
++	$(wildcard ../SeggerRTT/RTT/*.c) \
++	$(wildcard ../application/source/SeggerRTT/Syscalls/*.c) \
++	$(wildcard ../application/source/usb/*.c) \
++	$(wildcard ../application/source/user_interface/*.c)
++
++OZERO_SOURCES := \
++	../application/source/dmr_codec/codec_interface.c
++
++##
++## Drivers' source files and include directories
++##
++DRIVERS_INC := \
++	-I../ \
++	-I../Drivers/STM32F4xx_HAL_Driver/Inc \
++	-I../Middlewares/ST/STM32_USB_Device_Library/Core/Inc \
++	-I../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \
++	-I../USB_DEVICE/Target \
++	-I../USB_DEVICE/App
++
++DRIVERS_SRC := \
++	$(wildcard ../Drivers/STM32F4xx_HAL_Driver/Src/*.c) \
++	$(wildcard ../Middlewares/ST/STM32_USB_Device_Library/Core/Src/*.c) \
++	$(wildcard ../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/*.c) \
++	$(wildcard ../USB_DEVICE/Target/*.c) \
++	$(wildcard ../USB_DEVICE/App/*.c)
++
++##
++## List here additional static libraries with relative path
++##
++LIBS :=
++
++##
++## List here additional include directories (in the form -Iinclude_dir)
++##
++INCLUDE_DIRS := \
++	-I../application/include
++
++##
++## List here additional defines
++##
++DEFINES += \
++	-DUSE_HAL_DRIVER
++
++
++##
++## Debug defines
++##
++
++DEBUG := 1
++ifeq ($(DEBUG), 1)
++    DEFINES += -DDEBUG -g3
++endif
++DEFINES += -DNDEBUG
++
++
++##
++## Define used to select target processor
++##
++TARGET := -DSTM32F405xx
++
++
++##
++## Optimization level
++##
++OPTLEVEL := -Os
++#OPTLEVEL:= -O2
++#OPTLEVEL:= -O3
++#OPTLEVEL:= -Os
++
++##
++## Device-specific source files and include directories, e.g. startup code
++##
++DEVICE_INC := \
++	-I../Core/Inc \
++	-I../Drivers/CMSIS/Device/ST/STM32F4xx/Include \
++	-I../Drivers/CMSIS/Include
++
++DEVICE_SRC := \
++	../Core/Startup/startup_stm32f405vgtx.s \
++	$(wildcard ../Core/Src/*.c)
++
++##
++## Operating system's source files and include directories
++##
++OS_INC := \
++	-I../Middlewares/Third_Party/FreeRTOS/Source/include \
++	-I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 \
++	-I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F
++
++OS_SRC := \
++	$(wildcard ../Middlewares/Third_Party/FreeRTOS/Source/*.c) \
++	$(wildcard ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/*.c) \
++	../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c \
++	../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c
++
++ALL_INC := $(OS_INC) $(DEVICE_INC) $(DRIVERS_INC) $(INCLUDE_DIRS)
++ALL_SRC := $(SRC) $(OS_SRC) $(DEVICE_SRC) $(DRIVERS_SRC)
++
++# -fcyclomatic-complexity is ST's gcc extension
++CONFIGS := $(TARGET) -Wall -ffunction-sections \
++		-fdata-sections -ffreestanding -fno-builtin \
++		-fmerge-constants -fstack-usage \
++		-Wno-format -Wno-format-truncation -Wno-stringop-overflow
++
++LINKERSCRIPT = ../STM32F405VGTX_FLASH.ld
++
++# XXX Debian's libc-nano does not have __sf_fake_stdout, __sf_fake_stderr
++#CONFIGS += -specs=nano.specs
++
++ifeq ("$(VERBOSE)","1")
++Q :=
++ECHO := @true
++else
++Q := @
++ECHO := @echo
++endif
++
++
++BUILD_DIR ?= ./bin
++
++## Replaces both "foo.cpp"-->"foo.o" and "foo.c"-->"foo.o"
++OBJ := $(addprefix $(BUILD_DIR)/,  $(addsuffix .o, $(basename $(ALL_SRC))))
++OZERO_OBJECTS := $(addprefix $(BUILD_DIR)/,  $(addsuffix .o, $(basename $(OZERO_SOURCES))))
++
++CFLAGS   := $(ALL_INC) -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -std=gnu11 $(CONFIGS) \
++            $(DEFINES) $(EXCEPT) -c
++
++AFLAGS   := -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb
++LFLAGS   := -nostdlib -Xlinker -Map="MDUV380_firmware.map" -Xlinker --gc-sections -Xlinker  \
++	-print-memory-usage -Xlinker --sort-section=alignment -mcpu=cortex-m4       \
++	-mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -T $(LINKERSCRIPT) $(CONFIGS)
++
++DFLAGS   := -MMD -MP
++
++LINK_LIBS := $(LIBS)
++
++CC  := arm-none-eabi-gcc
++AS  := arm-none-eabi-as
++CP  := arm-none-eabi-objcopy
++SZ  := arm-none-eabi-size
++
++all: $(BIN_FILE)
++
++$(BIN_FILE): MDUV380_firmware.elf
++	$(ECHO) 'Performing post-build steps'
++	$(Q)$(SZ) $(BUILD_DIR)/MDUV380_firmware.elf
++	$(Q)$(CP) -v -O binary $(BUILD_DIR)/MDUV380_firmware.elf $(BUILD_DIR)/MDUV380_firmware.bin
++	$(Q) ../tools/codec_cleaner -i $(BUILD_DIR)/MDUV380_firmware.bin -o $(BUILD_DIR)/$(BIN_FILE)
++
++MDUV380_firmware.elf: $(OBJ) #all-recursive
++	$(ECHO) "[LD ] MDUV380_firmware.elf"
++	$(Q)$(CC) $(LFLAGS) -o $(BUILD_DIR)/MDUV380_firmware.elf $(OBJ) $(LINK_LIBS)
++
++$(OZERO_OBJECTS):
++	$(Q)$(MKDIR_P) $(dir $@)
++	$(ECHO) "[CC0] $(@:bin/%.o=%.c)"
++	$(Q)$(CC)  $(DFLAGS) $(CFLAGS) -O0 $(@:bin/%.o=%.c) -o $@
++
++$(BUILD_DIR)/%.o: %.s
++	$(Q)$(MKDIR_P) $(dir $@)
++	$(ECHO) "[AS ] $<"
++	$(Q)$(AS)  $(AFLAGS) $< -o $@
++
++$(BUILD_DIR)/%.o : %.c
++	$(Q)$(MKDIR_P) $(dir $@)
++	$(ECHO) "[CC ] $<"
++	$(Q)$(CC)  $(DFLAGS) $(CFLAGS) $(OPTLEVEL) $< -o $@
++
++.PHONY: clean
++
++clean:
++	$(Q)$(RM) -rf $(BUILD_DIR) MDUV380_firmware.map && find . -type f -name "*.o" -exec rm {} + -o -name "*.d" -exec rm {} +
++
++-include $(DEPS)
++
++MKDIR_P ?= mkdir -p
