@@ -1,7 +1,7 @@
 diff -uNpr OPENGD77_20260131.orig/firmware/Makefile OPENGD77_20260131.patched/firmware/Makefile
 --- OPENGD77_20260131.orig/firmware/Makefile	1970-01-01 09:00:00.000000000 +0900
-+++ OPENGD77_20260131.patched/firmware/Makefile	2026-02-25 00:11:13.991389344 +0900
-@@ -0,0 +1,249 @@
++++ OPENGD77_20260131.patched/firmware/Makefile	2026-04-29 15:52:28.889522512 +0900
+@@ -0,0 +1,255 @@
 +##
 +## export PATH=$ARM_TOOLCHAIN_PATH:$PATH
 +## mkdir build && cd build && make -f ../Makefile -j8
@@ -14,30 +14,36 @@ diff -uNpr OPENGD77_20260131.orig/firmware/Makefile OPENGD77_20260131.patched/fi
 +	RADIO := GD77
 +endif
 +
++ifeq ("$(LANGUAGE)","JA")
++	LANG_SUFFIX := _$(LANGUAGE)
++	LANG_DEFINES := -DLANGUAGE_BUILD_JAPANESE
++endif
++
 +##
 +## Selection of MCU platform and baseband
 +##
 +ifeq ("$(RADIO)","GD77")
 +	DEFINES  := -DPLATFORM_GD77
 +	BIN2SGL_OPT  :=
-+	BIN_FILE  := OpenGD77.bin
++	BIN_FILE  := OpenGD77$(LANG_SUFFIX).bin
 +else ifeq ("$(RADIO)","GD77s")
 +	DEFINES  := -DPLATFORM_GD77S
 +	BIN2SGL_OPT  := -m GD-77S
-+	BIN_FILE  := OpenGD77S.bin
++	BIN_FILE  := OpenGD77S$(LANG_SUFFIX).bin
 +else ifeq ("$(RADIO)","DM1801")
 +	DEFINES  := -DPLATFORM_DM1801
 +	BIN2SGL_OPT  := -m DM-1801
-+	BIN_FILE  := OpenDM1801.bin
++	BIN_FILE  := OpenDM1801$(LANG_SUFFIX).bin
 +else ifeq ("$(RADIO)","DM1801A")
 +	DEFINES  := -DPLATFORM_DM1801A
 +	BIN2SGL_OPT  := -m DM-1801
-+	BIN_FILE  := OpenDM1801A.bin
++	BIN_FILE  := OpenDM1801A$(LANG_SUFFIX).bin
 +else ifeq ("$(RADIO)","RD5R")
 +	DEFINES  := -DPLATFORM_RD5R
 +	BIN2SGL_OPT  := -m RD-5R
-+	BIN_FILE  := OpenDM5R.bin
++	BIN_FILE  := OpenDM5R$(LANG_SUFFIX).bin
 +endif
++DEFINES += $(LANG_DEFINES)
 +
 +##
 +## List here your source files (both .s, .c and .cpp)
